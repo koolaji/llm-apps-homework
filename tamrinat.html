@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تمرین‌های Prompt Engineering برای LLM Apps</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+
+<style>
+  :root {
+    --text: #1f2328;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --bg: #ffffff;
+    --code-bg: #f6f8fa;
+    --accent: #374151;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  body {
+    font-family: 'Vazirmatn', Tahoma, sans-serif;
+    line-height: 1.9;
+    font-size: 16px;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+
+  header {
+    margin-bottom: 56px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+  }
+
+  header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0;
+  }
+
+  .exercise {
+    margin-bottom: 64px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .exercise:last-of-type {
+    border-bottom: none;
+  }
+
+  .exercise-number {
+    display: inline-block;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+    margin-bottom: 6px;
+  }
+
+  .exercise h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 20px;
+  }
+
+  .exercise p {
+    margin: 0 0 16px;
+  }
+
+  .exercise blockquote {
+    margin: 0 0 16px;
+    padding: 12px 18px;
+    background: var(--code-bg);
+    border-inline-start: 3px solid var(--border);
+    color: var(--accent);
+    font-size: 15px;
+  }
+
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 24px 0 10px;
+  }
+
+  ul, ol {
+    margin: 0 0 16px;
+    padding-inline-start: 22px;
+  }
+
+  li {
+    margin-bottom: 6px;
+  }
+
+  code {
+    font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+    font-size: 13.5px;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    direction: ltr;
+    unicode-bidi: embed;
+  }
+
+  pre {
+    margin: 0 0 16px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    direction: rtl;
+    text-align: right;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    display: block;
+    direction: rtl;
+    text-align: right;
+    unicode-bidi: plaintext;
+    white-space: pre-wrap;
+  }
+
+  .reference {
+    margin-top: 20px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  .flow {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 22px;
+    text-align: center;
+    color: var(--accent);
+    font-size: 15px;
+    line-height: 2.1;
+  }
+
+  footer {
+    margin-top: 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>تمرین‌های عملی Prompt Engineering</h1>
+  <p>پنج mini-project برای ساخت قابلیت‌های واقعی یک LLM App</p>
+</header>
+
+<main>
+
+  <section class="exercise">
+    <span class="exercise-number">تمرین ۱</span>
+    <h2>تحلیل هوشمند Review محصول</h2>
+    <p>فرض کنید می‌خواهید برای یک فروشگاه آنلاین، سیستمی بسازید که Review مشتریان را به‌صورت خودکار تحلیل کند.</p>
+    <p>تابعی به نام زیر ایجاد کنید:</p>
+    <pre><code class="language-python">analyze_review(review: str)</code></pre>
+    <p>که یک Review فارسی دریافت کرده و اطلاعات زیر را استخراج کند:</p>
+    <ul>
+      <li>احساس کلی مشتری: <code>positive / negative / neutral</code></li>
+      <li>امتیاز تقریبی از ۱ تا ۵</li>
+      <li>آیا مشتری احتمالاً محصول را پیشنهاد می‌کند یا خیر</li>
+      <li>مهم‌ترین نکات مثبت</li>
+      <li>مهم‌ترین نکات منفی</li>
+      <li>یک خلاصه کوتاه از Review</li>
+    </ul>
+
+    <h3>الزامات فنی</h3>
+    <ul>
+      <li>مدل را با <code>init_chat_model</code> ایجاد کنید.</li>
+      <li>Prompt را با <code>ChatPromptTemplate</code> بسازید.</li>
+      <li>برای خروجی یک <code>Pydantic BaseModel</code> تعریف کنید.</li>
+      <li>از <code>with_structured_output</code> استفاده کنید.</li>
+      <li>Review را با Delimiter از دستور Prompt جدا کنید.</li>
+      <li>در System Prompt نقش مدل را مشخص کنید.</li>
+      <li>محدودیت‌های خروجی را شفاف و دقیق بیان کنید.</li>
+    </ul>
+
+    <h3>نکته Prompt Engineering</h3>
+    <ul>
+      <li>Role</li>
+      <li>Clear &amp; Specific Instructions</li>
+      <li>Delimiter</li>
+      <li>Output Format</li>
+      <li>جلوگیری از حدس زدن اطلاعاتی که در Review وجود ندارند.</li>
+    </ul>
+
+    <p>حداقل ۵ Review مختلف را تست کنید؛ از جمله Reviewهای مثبت، منفی، خنثی و Reviewهایی که اطلاعات ناقص دارند.</p>
+
+    <div class="reference">رفرنس: <code>03_02-Guidelines-for-Prompting.ipynb</code>، <code>03_06-NER.ipynb</code> و <code>04_01-Models_Messages_StructuredOutput.ipynb</code></div>
+  </section>
+
+  <section class="exercise">
+    <span class="exercise-number">تمرین ۲</span>
+    <h2>دستیار هوشمند پردازش رزومه</h2>
+    <p>فرض کنید یک شرکت هر روز تعداد زیادی رزومه دریافت می‌کند و می‌خواهد اطلاعات اولیه آن‌ها را به‌صورت ساختاریافته استخراج کند.</p>
+    <p>تابعی به نام زیر بنویسید:</p>
+    <pre><code class="language-python">extract_resume_info(resume: str)</code></pre>
+    <p>سیستم باید از متن رزومه این اطلاعات را استخراج کند:</p>
+    <pre><code class="language-python">name
+email
+phone
+location
+education
+skills
+years_of_experience
+job_titles
+programming_languages</code></pre>
+    <p>همچنین یک فیلد به نام <code>summary</code> داشته باشید که در چند جمله سابقه فرد را خلاصه کند.</p>
+
+    <h3>الزامات فنی</h3>
+    <ul>
+      <li><code>init_chat_model</code></li>
+      <li><code>ChatPromptTemplate</code></li>
+      <li><code>Pydantic</code></li>
+      <li><code>with_structured_output</code></li>
+    </ul>
+
+    <h3>الزامات Prompt</h3>
+    <ol>
+      <li>نقش مدل را به‌عنوان Resume Information Extractor مشخص کنید.</li>
+      <li>متن Resume را با delimiter مشخص کنید.</li>
+      <li>به مدل بگویید اطلاعاتی را که در Resume وجود ندارد حدس نزند.</li>
+      <li>برای هر فیلد توضیح واضحی ارائه کنید.</li>
+      <li>برای <code>skills</code> و <code>programming_languages</code> خروجی لیستی در نظر بگیرید.</li>
+      <li>از مدل بخواهید <code>summary</code> را فقط بر اساس اطلاعات موجود در Resume تولید کند.</li>
+    </ol>
+
+    <h3>بخش اضافه</h3>
+    <p>یک Resume فارسی و یک Resume انگلیسی را تست کنید. سپس یک Resume ناقص بدهید که مثلاً شماره تلفن یا سابقه کاری نداشته باشد و رفتار سیستم را بررسی کنید.</p>
+
+    <div class="reference">رفرنس: <code>03_02-Guidelines-for-Prompting.ipynb</code>، <code>03_06-NER.ipynb</code> و <code>04_01-Models_Messages_StructuredOutput.ipynb</code></div>
+  </section>
+
+  <section class="exercise">
+    <span class="exercise-number">تمرین ۳</span>
+    <h2>تبدیل متن خام مشتری به Ticket پشتیبانی</h2>
+    <p>فرض کنید متن زیر از چت مشتری وارد سیستم پشتیبانی شده است:</p>
+    <blockquote>«سلام، از صبح نمی‌تونم وارد حسابم بشم. هر بار رمزمو می‌زنم خطای Authentication failed میده. خیلی عجله دارم چون باید امروز گزارشمو ارسال کنم.»</blockquote>
+    <p>سیستمی بسازید که متن مشتری را به یک Support Ticket ساختاریافته تبدیل کند. خروجی باید شامل این موارد باشد:</p>
+    <pre><code class="language-python">category
+priority
+sentiment
+summary
+customer_problem
+suggested_action
+needs_human_agent</code></pre>
+    <p>مثلاً <code>category</code> می‌تواند یکی از این موارد باشد: <code>authentication / payment / technical / account / other</code></p>
+    <p>و <code>priority</code>: <code>low / medium / high / critical</code></p>
+
+    <h3>الزامات فنی</h3>
+    <ul>
+      <li><code>ChatPromptTemplate</code></li>
+      <li><code>SystemMessage</code></li>
+      <li><code>HumanMessage</code></li>
+      <li><code>Pydantic</code></li>
+      <li><code>with_structured_output</code></li>
+      <li><code>init_chat_model</code></li>
+    </ul>
+
+    <h3>الزامات Prompt Engineering</h3>
+    <ul>
+      <li>نقش مدل را مشخص کند.</li>
+      <li>Task را مرحله‌بندی یا شفاف‌سازی کند.</li>
+      <li>متن مشتری را با delimiter جدا کند.</li>
+      <li>معیار مشخصی برای تشخیص priority ارائه دهد.</li>
+      <li>از مدل بخواهد بر اساس شواهد موجود در متن تصمیم بگیرد.</li>
+      <li>خروجی را دقیقاً مطابق schema تولید کند.</li>
+    </ul>
+
+    <h3>تست</h3>
+    <p>حداقل ۵ پیام متفاوت برای سیستم بنویسید: مشکل Login، مشکل پرداخت، مشکل فنی، یک سؤال ساده، یک پیام عصبانی مشتری.</p>
+    <p>هدف این تمرین این است که ببینید آیا طراحی Prompt شما روی کیفیت classification تأثیر می‌گذارد یا نه.</p>
+
+    <div class="reference">رفرنس: <code>03_02-Guidelines-for-Prompting.ipynb</code> و <code>04_01-Models_Messages_StructuredOutput.ipynb</code></div>
+  </section>
+
+  <section class="exercise">
+    <span class="exercise-number">تمرین ۴</span>
+    <h2>تولید محتوای فنی با Prompt Template</h2>
+    <p>فرض کنید یک تیم فنی می‌خواهد برای موضوعات مختلف، محتوای آموزشی تولید کند. تابعی بسازید:</p>
+    <pre><code class="language-python">generate_technical_content(
+    topic,
+    audience,
+    difficulty,
+    language,
+    content_type
+)</code></pre>
+    <p>مثلاً:</p>
+    <pre><code class="language-python">generate_technical_content(
+    topic="RAG",
+    audience="Python developers",
+    difficulty="intermediate",
+    language="Persian",
+    content_type="LinkedIn post"
+)</code></pre>
+    <p><code>content_type</code> می‌تواند مثلاً یکی از این موارد باشد: <code>LinkedIn post / Tutorial / Short explanation / Cheat sheet</code></p>
+
+    <h3>الزامات فنی</h3>
+    <ul>
+      <li><code>init_chat_model</code></li>
+      <li><code>ChatPromptTemplate</code></li>
+      <li><code>Pydantic</code></li>
+    </ul>
+    <p>خروجی را به شکل ساختاریافته برگردانید:</p>
+    <pre><code class="language-python">title
+content
+key_points
+target_audience
+suggested_hashtags</code></pre>
+
+    <h3>الزامات Prompt Engineering</h3>
+    <ul>
+      <li>Role</li>
+      <li>Context</li>
+      <li>Task</li>
+      <li>Audience</li>
+      <li>Tone</li>
+      <li>Constraints</li>
+      <li>Output Format</li>
+    </ul>
+    <p>همچنین از Few-shot Prompting استفاده کنید و حداقل دو مثال از ورودی/خروجی مناسب داخل Prompt قرار دهید.</p>
+
+    <h3>نکته مهم</h3>
+    <p>یک Prompt ثابت برای همه حالت‌ها ننویسید که فقط متغیرها را داخل آن قرار دهید؛ طراحی Prompt باید به شکلی باشد که مدل واقعاً تفاوت بین <code>beginner / intermediate</code> و <code>LinkedIn post / Tutorial</code> را در خروجی لحاظ کند.</p>
+
+    <div class="reference">رفرنس: <code>03_02-Guidelines-for-Prompting.ipynb</code>، <code>03_04-iterative-prompt-development.ipynb</code> و <code>03_14_role_prompting.ipynb</code></div>
+  </section>
+
+  <section class="exercise">
+    <span class="exercise-number">تمرین ۵</span>
+    <h2>ساخت دستیار تحلیل جلسه</h2>
+    <p>فرض کنید متن transcript یک جلسه فنی در اختیار شماست و می‌خواهید آن را به یک گزارش قابل استفاده برای تیم تبدیل کنید. تابعی بنویسید:</p>
+    <pre><code class="language-python">analyze_meeting(transcript: str)</code></pre>
+    <p>که transcript را دریافت کند و خروجی زیر را تولید کند:</p>
+    <pre><code class="language-python">summary
+decisions
+action_items
+open_questions
+mentioned_people
+mentioned_projects
+next_steps</code></pre>
+    <p>برای <code>action_items</code> حداقل این اطلاعات را داشته باشید:</p>
+    <pre><code class="language-python">task
+owner
+deadline</code></pre>
+
+    <h3>نکته مهم</h3>
+    <p>اگر در transcript مشخص نشده باشد چه کسی مسئول یک Task است یا deadline مشخصی وجود نداشته باشد، مدل نباید آن را حدس بزند. مثلاً:</p>
+    <pre><code class="language-python">owner = None
+deadline = None</code></pre>
+
+    <h3>الزامات فنی</h3>
+    <ul>
+      <li><code>init_chat_model</code></li>
+      <li><code>ChatPromptTemplate</code></li>
+      <li><code>Pydantic</code></li>
+      <li><code>with_structured_output</code></li>
+    </ul>
+
+    <h3>الزامات Prompt Engineering</h3>
+    <ul>
+      <li>Role مشخص داشته باشد.</li>
+      <li>هدف Task کاملاً مشخص باشد.</li>
+      <li>Transcript با delimiter جدا شود.</li>
+      <li>درباره عدم hallucination دستور واضح داشته باشد.</li>
+      <li>قوانین استخراج action_items را مشخص کند.</li>
+      <li>Format خروجی مشخص باشد.</li>
+      <li>از مدل بخواهد بین «تصمیم گرفته‌شده» و «پیشنهاد مطرح‌شده» تفاوت بگذارد.</li>
+    </ul>
+
+    <h3>بخش Iterative</h3>
+    <p>ابتدا یک Prompt اولیه بنویسید و اجرا کنید. سپس حداقل دو مشکل واقعی خروجی را پیدا کنید و Prompt را اصلاح کنید.</p>
+    <p>در نهایت سه نسخه زیر را در Notebook نگه دارید: <code>Prompt V1</code>، <code>Prompt V2</code>، <code>Prompt V3</code> و کوتاه توضیح دهید که در هر نسخه چه چیزی را تغییر داده‌اید و چرا.</p>
+
+    <div class="reference">رفرنس: <code>03_04-iterative-prompt-development.ipynb</code>، <code>03_06-NER.ipynb</code> و <code>04_01-Models_Messages_StructuredOutput.ipynb</code></div>
+  </section>
+
+  <section class="exercise" style="border-bottom:none;">
+    <h2>ترتیب پیشنهادی</h2>
+    <div class="flow">
+      ۱. Review Analysis ↓<br>
+      ۲. Resume Extraction ↓<br>
+      ۳. Support Ticket Classification ↓<br>
+      ۴. Content Generation ↓<br>
+      ۵. Meeting Intelligence
+    </div>
+  </section>
+
+</main>
+
+<footer>تمرکز اصلی روی اصول Prompt Engineering — با ساخت چند LLM application کوچک و قابل استفاده</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>

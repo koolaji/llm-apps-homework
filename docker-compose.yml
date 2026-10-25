@@ -1,0 +1,60 @@
+name: llm-apps-homework
+
+x-env: &env
+  env_file:
+    - .env
+
+services:
+  # ---------------- Prompt-engineering exercises (chapters 3-4) ----------------
+  ex1:
+    build: { context: ., dockerfile: exercises/ex1_review/Dockerfile }
+    <<: *env
+    profiles: [exercises]
+
+  ex2:
+    build: { context: ., dockerfile: exercises/ex2_resume/Dockerfile }
+    <<: *env
+    profiles: [exercises]
+
+  ex3:
+    build: { context: ., dockerfile: exercises/ex3_ticket/Dockerfile }
+    <<: *env
+    profiles: [exercises]
+
+  ex4:
+    build: { context: ., dockerfile: exercises/ex4_content/Dockerfile }
+    <<: *env
+    profiles: [exercises]
+
+  ex5:
+    build: { context: ., dockerfile: exercises/ex5_meeting/Dockerfile }
+    <<: *env
+    profiles: [exercises]
+
+  # ---------------- Tool-use chapter ----------------
+  tool-test:
+    build: { context: ., dockerfile: tool_use/Dockerfile }
+    <<: *env
+    profiles: [tool-use]
+    # function-calling acceptance tests + stock tool unit checks
+
+  tool-analysis:
+    build: { context: ., dockerfile: tool_use/Dockerfile }
+    <<: *env
+    profiles: [tool-use]
+    command: ["python", "tool_use/technical_analysis.py", "فولاد"]
+
+  # ---------------- MCP chapter ----------------
+  mcp-finance:
+    build: { context: ., dockerfile: mcp_server/Dockerfile }
+    <<: *env
+    profiles: [mcp]
+    # stdio server — normally launched by an MCP client (e.g. Claude Desktop):
+    #   docker run -i --rm --env-file .env llm-apps-homework-mcp-finance
+    stdin_open: true
+
+  mcp-test:
+    build: { context: ., dockerfile: mcp_server/Dockerfile }
+    <<: *env
+    profiles: [mcp]
+    command: ["python", "mcp_server/client_test.py"]

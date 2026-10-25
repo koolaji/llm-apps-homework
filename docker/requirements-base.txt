@@ -1,0 +1,9 @@
+# Shared dependencies for every exercise (installed in all images).
+langchain>=0.3
+langchain-anthropic>=0.3
+pydantic>=2.7
+requests>=2.31
+pytse-client>=0.7,<1
+pandas<3  # pytse-client is built against the pandas 2 API
+mcp>=1.2,<2  # mcp 2.x renames FastMCP -> MCPServer; course material uses v1
+anthropic>=0.42
