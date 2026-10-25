@@ -2,6 +2,9 @@
 
 Solutions for an LLM-applications course, all containerized with Docker.
 
+> **فارسی؟** راهنمای کامل فارسی: [`README.fa.md`](README.fa.md) ·
+> گزارش تحویل: [`docs/REPORT.fa.md`](docs/REPORT.fa.md)
+
 Three chapters, one project arc — from prompt engineering basics to a
 multi-tool **MCP finance server** (Iranian stock market + gold + USD rates):
 
@@ -128,9 +131,10 @@ mcp_server/
   tools/usd_rate.py         navasan.tech  (free key from Telegram bot)
   prompts.py                composite gold-price prompt + trend prompt
   client_test.py            scripted MCP client + acceptance checks
+  mock_navasan.py           navasan lookalike for keyless testing
 docker/requirements-base.txt shared dependencies (installed in every image)
 docker-compose.yml           one service per deliverable, profiles per chapter
-docs/                        original Persian exercise briefs (HTML)
+docs/                        original Persian exercise briefs + submission report
 ```
 
 ## Local (no Docker) development
