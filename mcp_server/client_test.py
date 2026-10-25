@@ -46,7 +46,24 @@ async def run(break_usd: bool, trend: bool) -> int:
         async with ClientSession(read, write) as session:
             await session.initialize()
 
-            # --- check 1: tools/list ---
+            # --- check 1: tools/list + the separate schema files ---
+            # get_stock_info's schema is the chapter-1 artifact (tool_use/schema.json);
+            # the two new tools carry their own in mcp_server/schemas/.
+            schemas_dir = os.path.join(os.path.dirname(__file__), "schemas")
+            schema_paths = {
+                "get_stock_info": os.path.join(
+                    os.path.dirname(schemas_dir), os.pardir, "tool_use", "schema.json"
+                ),
+                "get_gold_price": os.path.join(schemas_dir, "get_gold_price.schema.json"),
+                "get_usd_rate": os.path.join(schemas_dir, "get_usd_rate.schema.json"),
+            }
+            for tool_name, schema_path in schema_paths.items():
+                with open(schema_path, encoding="utf-8") as fh:
+                    schema = json.load(fh)
+                assert schema["name"] == tool_name, schema_path
+                assert "description" in schema and "input_schema" in schema, schema_path
+            print("PASS: separate JSON schemas exist and are valid for all tools")
+
             tools_response = await session.list_tools()
             found = {t.name for t in tools_response.tools}
             missing = EXPECTED_TOOLS - found

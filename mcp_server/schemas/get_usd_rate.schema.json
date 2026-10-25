@@ -1,0 +1,9 @@
+{
+  "name": "get_usd_rate",
+  "description": "آخرین نرخ دلار آمریکا به تومان را از navasan.tech برمی‌گرداند.",
+  "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  }
+}

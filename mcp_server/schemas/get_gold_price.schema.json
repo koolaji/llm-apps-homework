@@ -1,0 +1,9 @@
+{
+  "name": "get_gold_price",
+  "description": "قیمت لحظه‌ای جهانی طلا (هر انس، به دلار) را از gold-api.com برمی‌گرداند.",
+  "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  }
+}

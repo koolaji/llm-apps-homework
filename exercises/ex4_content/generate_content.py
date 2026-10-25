@@ -75,7 +75,7 @@ def generate_technical_content(
     difficulty: Literal["beginner", "intermediate"],
     language: str,
     content_type: Literal["LinkedIn post", "Tutorial", "Short explanation", "Cheat sheet"],
-):
+) -> TechnicalContent:
     """Generate technical content tailored to audience, difficulty and format."""
     prompt = ChatPromptTemplate.from_messages(
         [

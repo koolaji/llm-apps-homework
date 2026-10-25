@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r /app/docker/requirements-base.txt
 
 COPY common/ /app/common/
 COPY tool_use/stock_info.py /app/tool_use/stock_info.py
+COPY tool_use/schema.json /app/tool_use/schema.json
 COPY mcp_server/ /app/mcp_server/
 
 # stdio MCP server: speaks MCP on stdin/stdout.

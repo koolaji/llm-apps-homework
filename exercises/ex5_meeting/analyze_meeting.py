@@ -13,7 +13,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
 from common.llm import get_model
-from exercises.ex5_meeting.prompts import CHANGELOG, PROMPTS
+from exercises.ex5_meeting.prompts import CHANGELOG, HUMAN_TEMPLATES, PROMPTS
 
 
 class ActionItem(BaseModel):
@@ -56,10 +56,15 @@ class MeetingAnalysis(BaseModel):
     )
 
 
-def analyze_meeting(transcript: str, version: Literal["v1", "v2", "v3"] = "v3"):
-    """Analyze a meeting transcript with the selected prompt version."""
+def analyze_meeting(transcript: str, version: Literal["v1", "v2", "v3"] = "v3") -> MeetingAnalysis:
+    """Analyze a meeting transcript with the selected prompt version.
+
+    The transcript is passed once, in the human message; the system prompt
+    carries only the instructions. V1 deliberately has no delimiter — see
+    prompts.py for the iteration story.
+    """
     prompt = ChatPromptTemplate.from_messages(
-        [("system", PROMPTS[version]), ("human", "{transcript}")]
+        [("system", PROMPTS[version]), ("human", HUMAN_TEMPLATES[version])]
     )
     model = get_model().with_structured_output(MeetingAnalysis)
     return (prompt | model).invoke({"transcript": transcript})
