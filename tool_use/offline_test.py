@@ -9,19 +9,25 @@ live TSETMC connection:
   3. TSETMC connectivity failures surface as a clear RuntimeError.
   4. schema.json is valid and matches the tool contract.
   5. The tool dict passes through a real Claude API function-calling round trip.
+  6. search_stock_news parses an RSS payload (mocked) into the documented
+     shape, sorted newest first, and validates its arguments.
+  7. news_search.schema.json is valid and matches its tool contract.
 
 Run:  python tool_use/offline_test.py
 """
 
+import io
 import json
 import os
 import sys
-from unittest.mock import MagicMock, patch
+import urllib.error
+from unittest.mock import patch
 
 import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from tool_use.news_search import load_news_schema, search_stock_news
 from tool_use.stock_info import get_stock_info, load_schema
 
 FAILED = []
@@ -95,6 +101,81 @@ def test_schema():
     assert schema["input_schema"]["properties"]["symbol"]["type"] == "string"
 
 
+_FAKE_RSS = """<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"><channel><title>test - BingNews</title>
+<item><title>خبر قدیمی‌تر</title><link>http://example.com/1</link>
+<description>خلاصه اول</description><pubDate>Mon, 26 Oct 2026 10:00:00 GMT</pubDate>
+</item>
+<item><title>خبر جدیدتر</title><link>http://example.com/2</link>
+<Source>بورس۲۴</Source><description>خلاصه دوم</description>
+<pubDate>Tue, 27 Oct 2026 08:00:00 GMT</pubDate></item>
+</channel></rss>"""
+
+
+def _fake_urlopen(payload: bytes):
+    return io.BytesIO(payload)  # BytesIO already supports the context protocol
+
+
+def test_news_shape():
+    with patch(
+        "urllib.request.urlopen",
+        return_value=_fake_urlopen(_FAKE_RSS.encode("utf-8")),
+    ):
+        result = search_stock_news("فولاد")
+    assert result["symbol"] == "فولاد"
+    assert len(result["news"]) == 2
+    newest, oldest = result["news"]
+    assert newest["title"] == "خبر جدیدتر"  # sorted newest first
+    assert oldest["title"] == "خبر قدیمی‌تر"
+    assert newest["published"].startswith("2026-10-27T08:00:00")
+    assert newest["source"] == "بورس۲۴"
+    assert oldest["source"] == ""  # missing Source element tolerated
+    assert set(newest) == {"title", "link", "source", "published", "summary"}
+
+
+def test_news_count_limits_results():
+    with patch(
+        "urllib.request.urlopen",
+        return_value=_fake_urlopen(_FAKE_RSS.encode("utf-8")),
+    ):
+        result = search_stock_news("فولاد", count=1)
+    assert len(result["news"]) == 1
+    assert result["news"][0]["title"] == "خبر جدیدتر"
+
+
+def test_news_validation():
+    for bad_call in (
+        lambda: search_stock_news(""),
+        lambda: search_stock_news("   "),
+        lambda: search_stock_news("فولاد", count=0),
+        lambda: search_stock_news("فولاد", count=11),
+    ):
+        try:
+            bad_call()
+            raise AssertionError("no ValueError raised")
+        except ValueError:
+            pass
+
+
+def test_news_unreachable():
+    with patch(
+        "urllib.request.urlopen",
+        side_effect=urllib.error.URLError("connection refused"),
+    ):
+        try:
+            search_stock_news("فولاد")
+            raise AssertionError("no RuntimeError raised")
+        except RuntimeError as exc:
+            assert "unreachable" in str(exc)
+
+
+def test_news_schema():
+    schema = load_news_schema()
+    assert schema["name"] == "search_stock_news"
+    assert schema["input_schema"]["required"] == ["symbol"]
+    assert schema["input_schema"]["properties"]["symbol"]["type"] == "string"
+
+
 def test_claude_round_trip():
     """The mocked dict goes through a real Claude API function-calling message."""
     from anthropic import Anthropic
@@ -140,6 +221,11 @@ if __name__ == "__main__":
     check("invalid symbol raises ValueError", test_invalid_symbol)
     check("TSETMC outage raises clear RuntimeError", test_unreachable_tsetmc)
     check("schema.json is a valid tool schema", test_schema)
+    check("news search parses mocked RSS correctly", test_news_shape)
+    check("news search honours the count limit", test_news_count_limits_results)
+    check("news search validates its arguments", test_news_validation)
+    check("news provider outage raises clear RuntimeError", test_news_unreachable)
+    check("news_search.schema.json is a valid tool schema", test_news_schema)
     if os.environ.get("ANTHROPIC_API_KEY"):
         check("Claude API function-calling round trip", test_claude_round_trip)
     else:

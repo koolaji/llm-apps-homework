@@ -1,0 +1,18 @@
+{
+  "name": "search_stock_news",
+  "description": "جست‌وجوی اخبار جدید وب درباره یک نماد یا عبارت بورسی (تیتر، منبع، تاریخ و خلاصه هر خبر)",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "symbol": {
+        "type": "string",
+        "description": "نماد یا نام شرکت برای جست‌وجوی اخبار، مثلاً 'فولاد'"
+      },
+      "count": {
+        "type": "integer",
+        "description": "حداکثر تعداد خبر (پیش‌فرض ۵، بیشینه ۱۰)"
+      }
+    },
+    "required": ["symbol"]
+  }
+}

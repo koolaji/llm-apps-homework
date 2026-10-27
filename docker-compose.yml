@@ -58,3 +58,12 @@ services:
     <<: *env
     profiles: [mcp]
     command: ["python", "mcp_server/client_test.py"]
+
+  # Optional chapter exercise: web UI over the MCP server (http://localhost:8000)
+  mcp-ui:
+    build: { context: ., dockerfile: mcp_server/Dockerfile }
+    <<: *env
+    profiles: [mcp]
+    command: ["python", "mcp_server/ui.py"]
+    ports:
+      - "8000:8000"

@@ -82,7 +82,25 @@
 | فایل جدا `schema.json` | ✅ `tool_use/schema.json` |
 | تست کوچک پاس‌دادن خروجی به Function Calling در Claude API | ✅ `offline_test.py::test_claude_round_trip` — یک round trip واقعی با API |
 | پرامپت تحلیل تکنیکال با اجبار به استفاده از ابزار | ✅ `technical_analysis.py` — پرامپت تحلیل را منوط به فراخوانی ابزار می‌کند |
-| ابزار سرچ اخبار (اختیاری) | ❌ انجام نشد — مورد اختیاری است |
+| ابزار سرچ اخبار (اختیاری) | ✅ `news_search.py::search_stock_news` — با Bing News RSS (بخش بعد) |
+
+### تمرین اختیاری — ابزار سرچ اخبار (`search_stock_news`)
+
+- منبع: **Bing News RSS** (`format=RSS`) — بدون کلید، بدون کتابخانه اضافه
+  (فقط `urllib` و `xml.etree` از کتابخانه استاندارد) و از ایران هم قابل
+  دسترس. نتایج مطابق شرایط Bing صرفاً برای نمایش/استفاده شخصی و غیرتجاری
+  رندر می‌شوند (در docstring ذکر شده).
+- همان قوانین فصل: Type Hint + Google Docstring + خروجی dict مستند +
+  `ValueError` برای ورودی نامعتبر + `RuntimeError` برای عدم دسترسی منبع
+  (بدون کرش) + فایل جدا `news_search.schema.json`.
+- خروجی: تا ۱۰ خبر با `title`، `link`، `source`، `published` (ISO-8601) و
+  `summary`، مرتب‌شده از تازه‌ترین.
+- تست: ۵ چک جدید در `offline_test.py` (پارس RSS با mock، مرتب‌سازی و
+  `count`، اعتبارسنجی ورودی، خطای منبع، اعتبار schema) — همه PASS، داخل
+  کانتینر هم اجرا شد.
+- در `technical_analysis.py` هم wired شده: مدل علاوه بر `get_stock_info`
+  می‌تواند برای زمینه از اخبار استفاده کند (تحلیل عددی همچنان فقط از داده
+  نماد).
 
 ### محدودیت محیطی
 TSETMC سرورهای خارج از ایران (از جمله IP دیتاسنتر) را بلاک می‌کند؛ به همین
@@ -94,13 +112,14 @@ TSETMC سرورهای خارج از ایران (از جمله IP دیتاسنت�
 
 ## ۳. فصل MCP — سرور مالی چند-ابزاره (`mcp_server/`)
 
-### بخش الف — سه Tool
+### بخش الف — سه Tool الزامی + یک Tool اختیاری
 
 | Tool | منبع | کلید |
 |---|---|---|
 | `get_stock_info` | TSETMC (همان تمرین فصل قبل — import شده، کپی نشده) | — |
 | `get_gold_price` | gold-api.com | رایگان |
 | `get_usd_rate` | navasan.tech | رایگان از بات `@navasan_contact_bot` |
+| `search_stock_news` (اختیاری) | Bing News RSS | رایگان |
 
 - ساختار پروژه دقیقاً مطابق پیشنهاد تمرین است (`server.py` + `tools/`).
 - `tools/list` توسط SDK هندل می‌شود (طبق نکته خود تمرین).
@@ -126,15 +145,36 @@ TSETMC سرورهای خارج از ایران (از جمله IP دیتاسنت�
 
 | مورد | وضعیت |
 |---|---|
-| هر سه Tool ثبت و قابل فراخوانی | ✅ `tools/list` → سه ابزار |
+| هر سه Tool الزامی (+ اختیاری اخبار) ثبت و قابل فراخوانی | ✅ `tools/list` → چهار ابزار |
 | مدل هر دو ابزار (طلا + دلار) را صدا بزند | ✅ لاگ: `get_gold_price({})` سپس `get_usd_rate({})` |
 | عدد نهایی منطقی باشد | ✅ با انس ۳۹۹۶٫۹$ و دلار ۱٬۱۱۸٬۰۰۰: گرم ۲۴ عیار ≈ ۱۴۳٫۷M و ۱۸ عیار ≈ ۱۰۷٫۸M تومان — با محاسبه دستی چک شد |
 | خطای API → اعلام صریح، بدون حدس | ✅ تست `--break-usd`: مدل گفت «نرخ دلار در دسترس نبود» و محاسبه نکرد |
 
-تست‌های بیشتر: سؤال روند بازار با `--trend` (پرامپت دوم `TREND_PROMPT`).
+تست‌های بیشتر: سؤال روند بازار با `--trend` (پرامپت دوم `TREND_PROMPT`؛
+در آخرین اجرا هر سه ابزار `get_gold_price`، `get_stock_info` و
+`search_stock_news` فراخوانی شدند).
 
-### تمرین اختیاری (UI / پرامپت کامل‌تر)
-انجام نشد — اختیاری است.
+### تمرین اختیاری (پرامپت کامل‌تر + UI)
+
+هر دو انجام شد:
+
+- **پرامپت کامل‌تر:** `prompts.py::UI_PROMPT` — یک پرامپت ترکیبی که هر سوال
+  مالی را به ابزار درست route می‌کند (نماد ← `get_stock_info`، اخبار ←
+  `search_stock_news`، طلا/دلار برای فرمول گرم طلا) و قواعد «حدس نزن» و
+  «اعلام صریح داده‌ی غایب» را حفظ می‌کند. `TREND_PROMPT` هم برای استفاده از
+  اخبار (به‌عنوان جایگزین تحلیلی وقتی داده لحظه‌ای نیست) کامل شد.
+- **UI:** `mcp_server/ui.py` — صفحه وب فارسی (RTL) با Starlette + uvicorn
+  (هر دو وابستهٔ خود پکیج `mcp` هستند؛ هیچ نصب اضافه‌ای لازم نیست). بک‌اند
+  یک **نشست MCP دائمی** به ساب‌پروسس `server.py` نگه می‌دارد، پس هر سوال
+  واقعاً از پروتکل MCP می‌گذرد؛ صفحه پاسخ ابزارهای فراخوانی‌شده و زمان پاسخ
+  را نشان می‌دهد.
+- اجرا: `docker compose --profile mcp up -d --build mcp-ui` →
+  `http://localhost:8000`
+- تأیید: سوال طلای داخلی از طریق UI → فراخوانی `get_gold_price` و
+  `get_usd_rate` روی همان نشست MCP و محاسبه فرمول (انس ~۴٬۰۰۵$، دلار
+  ۱٬۱۱۸٬۰۰۰ → گرم ۱۸ عیار ≈ ۱۰۸ میلیون تومان) — در venv و داخل کانتینر هر
+  دو تست شد. سوال روند با `--trend` هر سه ابزار (شامل اخبار فولاد) را صدا
+  زد و برای دادهٔ غایب TSETMC «حدس نزن» را رعایت کرد.
 
 ---
 
@@ -156,4 +196,5 @@ docker compose run --rm ex5 python -m exercises.ex5_meeting.analyze_meeting --ve
 docker compose --profile tool-use run --rm tool-test
 docker compose --profile mcp run --rm mcp-test
 docker compose --profile mcp run --rm mcp-test python mcp_server/client_test.py --break-usd
+docker compose --profile mcp up -d --build mcp-ui    # UI اختیاری → localhost:8000
 ```

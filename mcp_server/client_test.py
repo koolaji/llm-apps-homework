@@ -1,7 +1,8 @@
 """Scripted MCP client — the chapter's acceptance harness.
 
 Checks (matching the exercise checklist):
-  1. The server exposes the three tools (tools/list via the SDK).
+  1. The server exposes the three required tools plus the optional news
+     search (tools/list via the SDK).
   2. Asking «قیمت طلای داخلی الان چقدره؟» makes the model call BOTH
      get_gold_price and get_usd_rate — not just one.
   3. Failure drill (run with --break-usd): with an invalid NAVASAN key the
@@ -26,7 +27,7 @@ from mcp.client.stdio import stdio_client
 
 from mcp_server.prompts import GOLD_PRICE_PROMPT, TREND_PROMPT
 
-EXPECTED_TOOLS = {"get_stock_info", "get_gold_price", "get_usd_rate"}
+EXPECTED_TOOLS = {"get_stock_info", "get_gold_price", "get_usd_rate", "search_stock_news"}
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -34,6 +35,11 @@ async def run(break_usd: bool, trend: bool) -> int:
     env = dict(os.environ)
     if break_usd:
         env["NAVASAN_API_KEY"] = "invalid-key-failure-drill"
+    # The server subprocess imports `mcp_server.*`, so the repo root must be
+    # importable there — a bare `python client_test.py` does not provide it.
+    env["PYTHONPATH"] = os.pathsep.join(
+        p for p in (ROOT, env.get("PYTHONPATH", "")) if p
+    )
 
     server_params = StdioServerParameters(
         command=sys.executable,
@@ -48,7 +54,7 @@ async def run(break_usd: bool, trend: bool) -> int:
 
             # --- check 1: tools/list + the separate schema files ---
             # get_stock_info's schema is the chapter-1 artifact (tool_use/schema.json);
-            # the two new tools carry their own in mcp_server/schemas/.
+            # the other tools carry their own in mcp_server/schemas/.
             schemas_dir = os.path.join(os.path.dirname(__file__), "schemas")
             schema_paths = {
                 "get_stock_info": os.path.join(
@@ -56,6 +62,9 @@ async def run(break_usd: bool, trend: bool) -> int:
                 ),
                 "get_gold_price": os.path.join(schemas_dir, "get_gold_price.schema.json"),
                 "get_usd_rate": os.path.join(schemas_dir, "get_usd_rate.schema.json"),
+                "search_stock_news": os.path.join(
+                    schemas_dir, "search_stock_news.schema.json"
+                ),
             }
             for tool_name, schema_path in schema_paths.items():
                 with open(schema_path, encoding="utf-8") as fh:
@@ -71,7 +80,7 @@ async def run(break_usd: bool, trend: bool) -> int:
             if missing:
                 print(f"FAIL: missing tools: {missing}")
                 return 1
-            print("PASS: all three tools are registered\n")
+            print("PASS: all four tools are registered (3 required + news)\n")
 
             mcp_tools = {
                 t.name: {

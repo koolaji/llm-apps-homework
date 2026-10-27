@@ -1,4 +1,4 @@
-"""MCP finance server — three real tools over stdio.
+"""MCP finance server — three required tools plus the optional news search.
 
 Run directly (stdio transport), or via Docker:
     docker run -i --rm --env-file .env <image>
@@ -14,6 +14,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp_server.tools.gold_price import get_gold_price as _get_gold_price_impl
 from mcp_server.tools.stock_info import get_stock_info as _get_stock_info_impl
 from mcp_server.tools.usd_rate import get_usd_rate as _get_usd_rate_impl
+from tool_use.news_search import search_stock_news as _search_stock_news_impl
 
 mcp = FastMCP("finance")
 
@@ -34,6 +35,12 @@ def get_gold_price() -> dict:
 def get_usd_rate() -> dict:
     """آخرین نرخ دلار آمریکا به تومان را از navasan.tech برمی‌گرداند."""
     return _get_usd_rate_impl()
+
+
+@mcp.tool()
+def search_stock_news(symbol: str, count: int = 5) -> dict:
+    """اخبار جدید وب درباره یک نماد یا عبارت بورسی را جست‌وجو می‌کند و تیتر، منبع، تاریخ و خلاصه هر خبر را برمی‌گرداند (تازه‌ترین اول)."""
+    return _search_stock_news_impl(symbol, count=count)
 
 
 if __name__ == "__main__":

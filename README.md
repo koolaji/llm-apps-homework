@@ -11,8 +11,8 @@ multi-tool **MCP finance server** (Iranian stock market + gold + USD rates):
 | Chapter | Folder | What it builds |
 |---|---|---|
 | Prompt Engineering | `exercises/ex1..ex5` | 5 LangChain mini-apps with structured output |
-| Tool Use | `tool_use/` | `get_stock_info` TSETMC tool + JSON Schema + function-calling round trip |
-| MCP | `mcp_server/` | MCP server with 3 tools + a prompt that *forces* multi-tool composition |
+| Tool Use | `tool_use/` | `get_stock_info` TSETMC tool + optional `search_stock_news` web-news tool + JSON Schema + function-calling round trip |
+| MCP | `mcp_server/` | MCP server with the 3 required tools + news search, a prompt that *forces* multi-tool composition, and a web UI |
 
 > The original exercise briefs (Persian, HTML) are in `docs/`.
 
@@ -74,8 +74,10 @@ docker compose --profile tool-use run --rm tool-analysis
 ```
 
 Files: `tool_use/stock_info.py` (the mandated signature/docstring),
-`tool_use/schema.json`, `tool_use/test_function_calling.py`,
-`tool_use/technical_analysis.py`.
+`tool_use/schema.json`, `tool_use/news_search.py` + `news_search.schema.json`
+(optional exercise: web news search via Bing News RSS — stdlib only, no API
+key), `tool_use/test_function_calling.py`,
+`tool_use/offline_test.py`, `tool_use/technical_analysis.py` (uses both tools).
 
 ## MCP chapter
 
@@ -87,9 +89,18 @@ docker compose --profile mcp run --rm mcp-test
 # failure drill: invalid NAVASAN key -> model must say which data is missing
 docker compose --profile mcp run --rm mcp-test python mcp_server/client_test.py --break-usd
 
-# bonus: market-trend question (extra multi-tool demo)
+# bonus: market-trend question (extra multi-tool demo, incl. news search)
 docker compose --profile mcp run --rm mcp-test python mcp_server/client_test.py --trend
+
+# optional exercise: web UI over the MCP server -> http://localhost:8000
+docker compose --profile mcp up -d --build mcp-ui
+# (stop with: docker compose --profile mcp down)
 ```
+
+The UI (`mcp_server/ui.py`, Starlette + uvicorn — both ship with the `mcp`
+package) keeps one persistent MCP session to the server subprocess, so every
+question really goes through the MCP protocol; the answer page shows which
+tools were called.
 
 ### Use with Claude Desktop
 
@@ -123,14 +134,16 @@ tool calls and the formula, and forbids guessing when a tool fails.
 ```
 common/llm.py               shared init_chat_model factory (env-driven)
 exercises/ex1..ex5          prompt-engineering mini-apps (+ samples per exercise)
-tool_use/                   stock tool, schema.json, acceptance tests, analysis demo
+tool_use/                   stock tool, news-search tool, schemas, tests, analysis demo
 mcp_server/
-  server.py                 FastMCP server (stdio) registering the 3 tools
+  server.py                 FastMCP server (stdio): 3 required tools + news search
   tools/stock_info.py       re-uses tool_use/stock_info.py (no duplication)
   tools/gold_price.py       gold-api.com  (free, no key)
   tools/usd_rate.py         navasan.tech  (free key from Telegram bot)
-  prompts.py                composite gold-price prompt + trend prompt
+  schemas/                  separate JSON schema per new tool
+  prompts.py                composite gold prompt + trend prompt + UI prompt
   client_test.py            scripted MCP client + acceptance checks
+  ui.py                     optional web UI (Starlette) over the MCP server
   mock_navasan.py           navasan lookalike for keyless testing
 docker/requirements-base.txt shared dependencies (installed in every image)
 docker-compose.yml           one service per deliverable, profiles per chapter

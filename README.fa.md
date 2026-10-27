@@ -8,8 +8,8 @@
 | فصل | پوشه | خروجی |
 |---|---|---|
 | Prompt Engineering | `exercises/ex1..ex5` | ۵ اپ کوچک LangChain با خروجی ساختاریافته |
-| Tool Use | `tool_use/` | ابزار `get_stock_info` بورس تهران + JSON Schema + تست Function Calling |
-| MCP | `mcp_server/` | سرور MCP با ۳ ابزار + پرامپتی که مدل را مجبور به ترکیب ابزارها می‌کند |
+| Tool Use | `tool_use/` | ابزار `get_stock_info` بورس تهران + ابزار اخبار `search_stock_news` (اختیاری) + JSON Schema + تست Function Calling |
+| MCP | `mcp_server/` | سرور MCP با ۳ ابزار الزامی + ابزار اخبار + پرامپت ترکیبی اجباری + رابط وب (UI) |
 
 > صورت اصلی تمرین‌ها در [`docs/`](docs/) و **گزارش کامل تحویل** در
 > [`docs/REPORT.fa.md`](docs/REPORT.fa.md) آمده است.
@@ -71,9 +71,11 @@ docker compose --profile tool-use run --rm tool-analysis
 ```
 
 فایل‌ها: `tool_use/stock_info.py` (امضا و docstring اجباری تمرین)،
-`tool_use/schema.json`، `tool_use/test_function_calling.py`،
+`tool_use/schema.json`، `tool_use/news_search.py` و `news_search.schema.json`
+(تمرین اختیاری: سرچ اخبار وب با Bing News RSS — فقط کتابخانه استاندارد، بدون کلید)،
+`tool_use/test_function_calling.py`،
 `tool_use/offline_test.py` (تست بدون دسترسی به TSETMC) و
-`tool_use/technical_analysis.py`.
+`tool_use/technical_analysis.py` (از هر دو ابزار استفاده می‌کند).
 
 ## فصل MCP
 
@@ -84,9 +86,18 @@ docker compose --profile mcp run --rm mcp-test
 # تست خرابی: کلید نامعتبر navasan → مدل باید بگوید کدام داده نبود
 docker compose --profile mcp run --rm mcp-test python mcp_server/client_test.py --break-usd
 
-# سؤال بیشتر: تحلیل روند بازار
+# سؤال بیشتر: تحلیل روند بازار (شامل ابزار اخبار)
 docker compose --profile mcp run --rm mcp-test python mcp_server/client_test.py --trend
+
+# تمرین اختیاری: رابط وب روی سرور MCP → http://localhost:8000
+docker compose --profile mcp up -d --build mcp-ui
+# (توقف: docker compose --profile mcp down)
 ```
+
+رابط وب (`mcp_server/ui.py`، با Starlette + uvicorn که هر دو همراه خود پکیج
+`mcp` نصب می‌شوند) یک نشست MCP دائمی به ساب‌پروسس سرور نگه می‌دارد؛ یعنی هر
+سؤال واقعاً از پروتکل MCP رد می‌شود و در صفحه پاسخ، ابزارهای فراخوانی‌شده
+نمایش داده می‌شوند.
 
 ### اتصال به Claude Desktop
 
@@ -121,14 +132,16 @@ docker compose --profile mcp run --rm mcp-test python mcp_server/client_test.py 
 ```
 common/llm.py               فکتوری مشترک init_chat_model (بر اساس env)
 exercises/ex1..ex5          اپ‌های Prompt Engineering + نمونه‌های تست هر کدام
-tool_use/                   ابزار بورس، schema.json، تست‌های پذیرش و آفلاین
+tool_use/                   ابزار بورس، ابزار اخبار، schema ها، تست‌های پذیرش و آفلاین
 mcp_server/
-  server.py                 سرور FastMCP (stdio) با ثبت ۳ ابزار
+  server.py                 سرور FastMCP (stdio): ۳ ابزار الزامی + اخبار
   tools/stock_info.py       استفاده مجدد از tool_use/stock_info.py
   tools/gold_price.py       gold-api.com (رایگان، بدون کلید)
   tools/usd_rate.py         navasan.tech (کلید رایگان از بات تلگرام)
-  prompts.py                پرامپت ترکیبی طلا + پرامپت روند بازار
+  schemas/                  یک schema جدا برای هر ابزار جدید
+  prompts.py                پرامپت ترکیبی طلا + پرامپت روند + پرامپت UI
   client_test.py            کلاینت MCP اسکریپتی + چک‌های پذیرش
+  ui.py                     رابط وب اختیاری (Starlette) روی سرور MCP
   mock_navasan.py           سرور شبیه‌ساز navasan برای تست بدون کلید
 docker/requirements-base.txt وابستگی‌های مشترک همه ایمیج‌ها
 docker-compose.yml          یک سرویس برای هر خروجی، profile برای هر فصل
